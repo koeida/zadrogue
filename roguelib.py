@@ -3,9 +3,14 @@ from random import randint
 from math import sqrt
 
 status = []
+news = ["Welcome to GOBBO THIEF!"]
 
-
-    
+tiles = { 0: (".", 9, True),
+          1: ("#", 2,False),
+          2: ("_", 2,False),
+          3: ("\"", 3,True),
+          4: ("/", 2,True),
+          5: ("]", 9,True)}
 
 class Creature:
     def __init__(self, x, y, tile, color, type):
@@ -16,6 +21,15 @@ class Creature:
         self.target = None
         self.type = type
         self.target_steps = 0
+        
+class Object:
+    def __init__(self, x, y, tile, color, type):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.tile = tile
+        self.type = type
+
         
 def distance(c1,c2):
     a = c1.x - c2.x      
@@ -88,12 +102,6 @@ def is_visible_old(c, t, floorplan):
     else:
         return False
     
-tiles = { 0: (".", 9, True),
-          1: ("#", 2,False),
-          2: ("_", 2,False),
-          3: ("\"", 3,True),
-          4: ("/", 2,True)}
-
 def offmap(x, y, floorplan):
     width = len(floorplan[1])
     height = len(floorplan)
@@ -121,8 +129,7 @@ def move_gobbo(gobbo, player, m):
     oldx = gobbo.x
     oldy = gobbo.y    
     
-    if gobbo.target != None:
-        gobbo.target_steps +=1       
+    if gobbo.target != None:              
         tx = gobbo.target[0]
         ty = gobbo.target[1]
         if (tx == gobbo.x and ty == gobbo.y) or gobbo.target_steps >= 10:
@@ -143,6 +150,7 @@ def move_gobbo(gobbo, player, m):
         if not wakabal(tilenum,gobbo.x,gobbo.y,m):
            gobbo.y = oldy
            gobbo.x = oldx
+           gobbo.target_steps += 1 
     else:
         gobbo.y = oldy
         gobbo.x = oldx
@@ -159,6 +167,7 @@ def move_gobbo(gobbo, player, m):
         if not wakabal(tilenum,gobbo.x,gobbo.y,m):
            gobbo.y = oldy
            gobbo.x = oldx
+           gobbo.target_steps += 1 
     else:
         gobbo.y = oldy
         gobbo.x = oldx
@@ -265,17 +274,37 @@ def draw_map(screen, m, tiles, x = 0, y = 0):
             img, color, opacity = tiles[tile_id]
             
             screen.addstr(y + cy, x + cx, img, curses.color_pair(color))
+            
+
+def display_news(screen, news):
+    top_news = news[-5:]
+    top_news.reverse()
+    cn = 0
+    MAP_HEIGHT = 23
+    MAP_WIDTH = 40
+    for n in top_news:
+        screen.addstr(MAP_HEIGHT + cn, 0, " " * MAP_WIDTH, curses.color_pair(10 + cn)), 
+        screen.addstr(MAP_HEIGHT + cn, 0, n, curses.color_pair(10 + cn))
+        cn += 1
 
 def init_colors():
     curses.init_color(2, 600, 400, 255)
     curses.init_color(3, 0, 1000, 0)
     curses.init_color(4, 100, 400, 0)
     
+    # Shades of grey for news
+    curses.init_color(10, 800, 800, 800)
+    curses.init_color(11, 600, 600, 600)
+    curses.init_color(12, 400, 400, 400)
+    curses.init_color(13, 300, 300, 300)
+    
     curses.init_color(5, 0, 1000, 0)
     curses.init_color(6, 0, 500, 0)
     curses.init_color(7, 1000, 600, 0)
     curses.init_color(8, 1000, 1000, 1000)
     curses.init_color(9, 1000, 1000, 0)
+    
+    
     
     
     
@@ -289,3 +318,13 @@ def init_colors():
     curses.init_pair(6, curses.COLOR_YELLOW, curses.COLOR_RED) # DANGER LIGHT
     curses.init_pair(7, 7, 9) # DANGER LIGHT
     curses.init_pair(9, 8, curses.COLOR_BLACK)
+    
+    # News fadeout
+    curses.init_pair(10, 10, curses.COLOR_BLACK)
+    curses.init_pair(11, 11, curses.COLOR_BLACK)
+    curses.init_pair(12, 12, curses.COLOR_BLACK)
+    curses.init_pair(13, 13, curses.COLOR_BLACK)
+    
+    curses.init_pair(14, 9, curses.COLOR_BLACK) # Yellow object
+    
+    

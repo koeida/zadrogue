@@ -13,18 +13,22 @@ def main(stdscr):
     height = len(floorplan)
     
     player = Creature(18, 17, "@", 1, "player") # x, y, image, color
-    
+    chest = Object(randint(0, width), randint(1,5),"=", 14, "treasure chest")
     creatures = [player]
+    objects = [chest]
     
     for x in range(5):
-        creatures.append(Creature(randint(1,30),randint(1,20), "&", 4, "gobbo"))
+        creatures.append(Creature(randint(1,width),randint(1,height), "&", 4, "gobbo"))
+    for x in range(5):
+        objects.append(Object(randint(0, width-1), randint(1,height),"$", 14, "coin"))
+
 
     while(inp != 113): # Quit game if player presses "q"
         stdscr.clear()
 
         draw_map(stdscr, floorplan, tiles)       
         
-        # creature movement
+        # creature movement    ]]]]
         player.status = "safe"
         for c in creatures:
             if c.type == "gobbo":
@@ -33,6 +37,9 @@ def main(stdscr):
         # Draw all creatures
         for c in creatures:
             stdscr.addstr(c.y, c.x, c.tile, curses.color_pair(c.color))
+        
+        for o in objects:
+            stdscr.addstr(o.y, o.x, o.tile, curses.color_pair(o.color))
             
         # Draw player info line
         gobbos = filter(lambda c: c.tile == "&" or c.tile =="!", creatures)
@@ -62,10 +69,12 @@ def main(stdscr):
         csy = 0        
         
         output_status(stdscr)
+        display_news(stdscr, news)
         stdscr.refresh()
 
         inp = stdscr.getch() # "Get character" -- pauses and waits for player to type a key
         keyboard_input(inp, player, floorplan)
     
+
 
 curses.wrapper(main)
