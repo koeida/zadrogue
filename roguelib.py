@@ -1,6 +1,7 @@
 import curses
 from random import randint
 from math import sqrt
+from copy import deepcopy
 
 status = []
 news = ["Welcome to GOBBO THIEF!"]
@@ -10,7 +11,10 @@ tiles = { 0: (".", 9, True),
           2: ("_", 2,False),
           3: ("\"", 3,True),
           4: ("/", 2,True),
-          5: ("]", 9,True)}
+          5: ("]", 10,True),
+          6: ("]", 11,True),
+          7: ("]", 12, True),
+          8: ("~",16,True)}
 
 class Creature:
     def __init__(self, x, y, tile, color, type):
@@ -21,6 +25,10 @@ class Creature:
         self.target = None
         self.type = type
         self.target_steps = 0
+        self.inv = []
+        self.health = 3
+        self.did_attack = False
+        self.is_stuck = False
         
 class Object:
     def __init__(self, x, y, tile, color, type):
@@ -43,12 +51,35 @@ def any(f,l):
         if f(x):
             return True
     return False
-        
-def output_status(screen):
-    for s in status[-5:].__reversed__():
-        screen.addstr(status_y + csy, 0, s, 1) # Display status string
-        csy += 1
-        
+
+
+def change_level(floorplan_file, gobbonum, coinum, time, inv = []):
+    creatures = []
+    objects = []
+    floorplan = read_floorplan(floorplan_file)
+    
+    width = len(floorplan[1])
+    height = len(floorplan)
+       
+     # x, y, image, color
+    
+    player = Creature(18, 17, "@", 1, "player")
+    creatures.append(player)
+    
+    player.inv = inv
+    rawck = Object(0,0,".", 12, "rock")
+    player.inv.append(rawck)
+    
+    gobbo = Creature(0,0, "&", 4, "gobbo")
+    spawn_random(1, width - 1, 1, height - 2, gobbo, floorplan, creatures, gobbonum)
+    
+    chest = Object(0,0,"=", 15, "treasure chest")
+    spawn_random(1, width - 1, 1, 5, chest, floorplan, objects, 1)
+    
+    coin = Object(0,0,"$",15,"coin")
+    spawn_random(1, width - 1, 1, height - 2, coin, floorplan, objects, coinum)
+    return (creatures, objects, floorplan, time)
+
 def its_opaque(tile_num, tiles):
     cur_tile_info = tiles[tile_num]    
     return not cur_tile_info[2]
@@ -77,12 +108,15 @@ def is_visible_old(c, t, floorplan):
                 break
     elif c.x == t.x:    
         columns = rotate_list(floorplan)
-        column = list(columns[c.x])
+        
+        #FIX THIS
+        try:
+            column = list(columns[c.x])
+        except:            
+            return
         column.reverse()
         
-        #Look up        
-        
-        
+        #Look up
         for cur_y in range(c.y, t.y - 1, -1):            
             cur_tile_num = column[cur_y]            
             if its_opaque(cur_tile_num, tiles):
@@ -114,69 +148,132 @@ def offmap(x, y, floorplan):
     
     return False
 
-def wakabal(tilenum, x, y, floorplan):
-    #Are we off the map?
-    #1) Get map width
-   
-    #3) Is x off the map? If so, return False  
+def spawn_random(minx, maxx, miny, maxy, obj, m, dest_list, count):
+    for x in range(count):
+        o = deepcopy(obj)
+        success = False
+        while (success != True):
+            o.x = randint(minx, maxx-1)
+            o.y = randint(miny, maxy-1)
+            obspot = m[o.y][o.x]
+            if obspot not in [1,2]:
+                success = True
+                dest_list.append(o)
+            
+    
+    
+    
+
+def wakabal(tilenum, x, y, floorplan, critter):
+
+    # Is critter stuck? If so, make them unstuck and return false ("not wakabal")
+    if critter.is_stuck:
+        critter.is_stuck = False
+        return False
+    if tilenum == 8:
+        critter.is_stuck = True
     
     if tilenum != 1 and tilenum != 2:
         return True
     else:
         return False
     
-def move_gobbo(gobbo, player, m):
-    oldx = gobbo.x
-    oldy = gobbo.y    
+def move_to_target(tx, ty, cx, cy):
+    xmod = 0
+    ymod = 0
+    if tx > cx:
+        xmod = 1
+    if tx < cx:
+        xmod = -1
+    if ty > cy:
+        ymod = 1
+    if ty < cy:
+        ymod = -1
     
+    if xmod != 0 and ymod != 0:
+        if randint(1,2) == 1:
+            xmod = 0
+        else:
+            ymod = 0
+            
+    return (xmod, ymod)
+
+def get_gobbo_target(gobbo):
     if gobbo.target != None:              
         tx = gobbo.target[0]
-        ty = gobbo.target[1]
-        if (tx == gobbo.x and ty == gobbo.y) or gobbo.target_steps >= 10:
-            gobbo.target_steps = 0
-            gobbo.target = None
+        ty = gobbo.target[1]        
     else:
         tx = gobbo.x + randint(-1,1)
         ty = gobbo.y + randint(-1,1)
-        
-        
-    if tx > gobbo.x:
-        gobbo.x += 1
-    if tx < gobbo.x:
-        gobbo.x -= 1
+    return (tx,ty)
+
+def bump_steps(c, oldx, oldy, m):
+    tilenum = m[c.y][c.x]
+    if (m[oldy][oldx] not in [5,6]) and tilenum == 6:
+        return True
+    if (m[oldy][oldx] == 6) and tilenum not in [5,6]:
+        return True
+    return False
     
-    if offmap(gobbo.x, gobbo.y, m) == False:
-        tilenum = m[gobbo.y][gobbo.x]
-        if not wakabal(tilenum,gobbo.x,gobbo.y,m):
-           gobbo.y = oldy
-           gobbo.x = oldx
-           gobbo.target_steps += 1 
-    else:
-        gobbo.y = oldy
-        gobbo.x = oldx
-       
-    oldx = gobbo.x
-    oldy = gobbo.y
-       
-    if ty > gobbo.y:
-        gobbo.y += 1
-    if ty < gobbo.y:
-        gobbo.y -= 1
-    if offmap(gobbo.x, gobbo.y, m) == False:
-        tilenum = m[gobbo.y][gobbo.x]
-        if not wakabal(tilenum,gobbo.x,gobbo.y,m):
-           gobbo.y = oldy
-           gobbo.x = oldx
-           gobbo.target_steps += 1 
-    else:
-        gobbo.y = oldy
-        gobbo.x = oldx
-       
+def gobbo_invalid_move(gobbo, m, oldx, oldy):    
+    if offmap(gobbo.x, gobbo.y, m):
+        return True
+    
+    tilenum = m[gobbo.y][gobbo.x]
+    if not wakabal(tilenum,gobbo.x,gobbo.y,m,gobbo):
+        return True
+    
+    if bump_steps(gobbo, oldx, oldy, m):
+        return True
+    
+    return False
+
+def gobbo_attack(gobbo,player,m):
+    # Make gobbo stand in place for a few turns after it hits you
+    if gobbo.did_attack == True:
+        if randint(1,4) == 1:
+            gobbo.did_attack = False
+        return
+    
+    if distance(gobbo, player) <= 1:
+        player.health -= 1
+        news.append("Oof! You got attacked!")
+        gobbo.did_attack = True
+        
+def gobbo_vision(gobbo, player, m):
     if is_visible_old(gobbo, player, m):
         gobbo.tile = "!"
         gobbo.target = (player.x,player.y)        
     else:
         gobbo.tile = "&"
+
+def tick_gobbo(gobbo, player, m):    
+    move_gobbo(gobbo, player, m)
+    gobbo_attack(gobbo,player, m)
+    gobbo_vision(gobbo,player, m)
+    
+def move_gobbo(gobbo, player, m):
+    oldx = gobbo.x
+    oldy = gobbo.y
+    
+    if gobbo.did_attack:
+        return
+    
+    tx, ty = get_gobbo_target(gobbo)
+        
+    # Make gobbo give up chasing target after a while
+    if (tx == gobbo.x and ty == gobbo.y) or gobbo.target_steps >= 10:
+        gobbo.target_steps = 0
+        gobbo.target = None
+    
+    xmod, ymod = move_to_target(tx,ty,gobbo.x,gobbo.y)
+    gobbo.x += xmod
+    gobbo.y += ymod
+    gobbo.target_steps += 1
+    
+    if gobbo_invalid_move(gobbo, m, oldx, oldy):
+        gobbo.y = oldy
+        gobbo.x = oldx
         
 def do_doors(x,y,m,a,b):
     """Look at tiles around x and y on map m: if any are of type a, change them to type b"""
@@ -190,10 +287,47 @@ def do_doors(x,y,m,a,b):
         m[y][x + 1] = b
         
     if m[y][x - 1] == a:
-        m[y][x - 1] = b  
+        m[y][x - 1] = b
+        
+def drop_first(f,l):
+    for x in l:
+        if f(x):
+            l.remove(x)
+            return
    
+def throw_rock(player, objects, creatures, stdscr, m):
+    width = len(m[1])
+    height = len(m)
+    news.append("Where do you want to throw the rock?")
+    display_news(stdscr, news, width, height)
+    stdscr.addstr(player.y - 1,player.x, "^", curses.color_pair(1)),
+    stdscr.addstr(player.y + 1,player.x, "v", curses.color_pair(1))
+    stdscr.addstr(player.y,player.x - 1, "<", curses.color_pair(1))
+    stdscr.addstr(player.y,player.x + 1, ">", curses.color_pair(1))
+    stdscr.refresh()
+                                                 
+    inp = stdscr.getch()
+    dx = 0
+    dy = 0
+    if inp == curses.KEY_DOWN:
+        dy = 5 
+    elif inp == curses.KEY_UP:
+        dy = -5
+    elif inp == curses.KEY_LEFT:
+        dx = -5
+    elif inp == curses.KEY_RIGHT:
+        dx = 5
+        
+    news.append("Yeet!")
+                           
+    drop_first(lambda x: x.type == "rock", player.inv)
+    rock = Object(player.x + dx, player.y + dy,".", 12, "rock")
+    objects.append(rock)   
+    enemies = filter(lambda c: c.type != "player" and distance(c,rock) <= 50, creatures)
+    for e in enemies:
+        e.target = (rock.x, rock.y)
 
-def keyboard_input(inp, player, m):
+def keyboard_input(inp, player, m, objects, creatures, stdscr):
     oldx = player.x
     oldy = player.y
     if inp == curses.KEY_DOWN:
@@ -208,18 +342,26 @@ def keyboard_input(inp, player, m):
         do_doors(player.x,player.y, m,2,4)
     elif inp == ord('c'):
         do_doors(player.x,player.y, m,4,2)
+    elif inp == ord('t') and any(lambda o: o.type == "rock", player.inv):
+        throw_rock(player, objects, creatures, stdscr, m)
         
     if offmap(player.x, player.y, m) == False:
         tilenum = m[player.y][player.x]
-        if not wakabal(tilenum,player.x,player.y,m):
+        if not wakabal(tilenum,player.x,player.y,m, player):
+            player.x = oldx
+            player.y = oldy
+        if (m[oldy][oldx] not in [5,6,7]) and tilenum in [6,7]:
+            player.x = oldx
+            player.y = oldy
+        if (m[oldy][oldx] in [6,7]) and tilenum not in [5,6,7]:
             player.x = oldx
             player.y = oldy
     else:
         player.x = oldx
         player.y = oldy
 
-def read_floorplan():
-    f = file("floorplan.txt","r")
+def read_floorplan(fname):
+    f = file(fname,"r")
     lines = f.readlines()
     lines = map(lambda l: map(int, list(l.strip())), lines)
     f.close()
@@ -276,15 +418,15 @@ def draw_map(screen, m, tiles, x = 0, y = 0):
             screen.addstr(y + cy, x + cx, img, curses.color_pair(color))
             
 
-def display_news(screen, news):
+def display_news(screen, news, width, height):
     top_news = news[-5:]
     top_news.reverse()
     cn = 0
-    MAP_HEIGHT = 23
-    MAP_WIDTH = 40
+    MAP_HEIGHT = height
+    MAP_WIDTH = width
     for n in top_news:
-        screen.addstr(MAP_HEIGHT + cn, 0, " " * MAP_WIDTH, curses.color_pair(10 + cn)), 
-        screen.addstr(MAP_HEIGHT + cn, 0, n, curses.color_pair(10 + cn))
+        screen.addstr(MAP_HEIGHT + cn + 1, 0, " " * MAP_WIDTH, curses.color_pair(10 + cn)), 
+        screen.addstr(MAP_HEIGHT + cn + 1, 0, n, curses.color_pair(10 + cn))
         cn += 1
 
 def init_colors():
@@ -303,6 +445,8 @@ def init_colors():
     curses.init_color(7, 1000, 600, 0)
     curses.init_color(8, 1000, 1000, 1000)
     curses.init_color(9, 1000, 1000, 0)
+    
+    curses.init_color(14, 301, 376, 929)
     
     
     
@@ -324,7 +468,9 @@ def init_colors():
     curses.init_pair(11, 11, curses.COLOR_BLACK)
     curses.init_pair(12, 12, curses.COLOR_BLACK)
     curses.init_pair(13, 13, curses.COLOR_BLACK)
+    curses.init_pair(14, 13, curses.COLOR_BLACK)
+    curses.init_pair(15, 9, curses.COLOR_BLACK)
     
-    curses.init_pair(14, 9, curses.COLOR_BLACK) # Yellow object
+    curses.init_pair(16, 14, curses.COLOR_BLACK)
     
     
