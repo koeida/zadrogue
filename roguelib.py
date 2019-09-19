@@ -29,6 +29,7 @@ class Creature:
         self.health = 3
         self.did_attack = False
         self.is_stuck = False
+        self.distracted = 0
         
 class Object:
     def __init__(self, x, y, tile, color, type):
@@ -241,6 +242,10 @@ def gobbo_attack(gobbo,player,m):
         gobbo.did_attack = True
         
 def gobbo_vision(gobbo, player, m):
+    if gobbo.distracted > 0:
+        gobbo.distracted -= 1
+        return
+
     if is_visible_old(gobbo, player, m):
         gobbo.tile = "!"
         gobbo.target = (player.x,player.y)        
@@ -323,9 +328,10 @@ def throw_rock(player, objects, creatures, stdscr, m):
     drop_first(lambda x: x.type == "rock", player.inv)
     rock = Object(player.x + dx, player.y + dy,".", 12, "rock")
     objects.append(rock)   
-    enemies = filter(lambda c: c.type != "player" and distance(c,rock) <= 50, creatures)
+    enemies = filter(lambda c: c.type != "player" and distance(c,rock) <= 10, creatures)
     for e in enemies:
         e.target = (rock.x, rock.y)
+        e.distracted = 3
 
 def keyboard_input(inp, player, m, objects, creatures, stdscr):
     oldx = player.x
