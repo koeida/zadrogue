@@ -54,7 +54,11 @@ def any(f,l):
     return False
 
 
-def change_level(floorplan_file, gobbonum, coinum, time, inv = []):
+def change_level(level, inv = []):
+    floorplan_file = level.m
+    gobbonum = level.num_gobbos
+    coinum = level.num_gold
+    time = level.time
     creatures = []
     objects = []
     floorplan = read_floorplan(floorplan_file)
@@ -73,6 +77,9 @@ def change_level(floorplan_file, gobbonum, coinum, time, inv = []):
     
     gobbo = Creature(0,0, "&", 4, "gobbo")
     spawn_random(1, width - 1, 1, height - 2, gobbo, floorplan, creatures, gobbonum)
+
+    villager = Creature(0, 0, "v", 17, "villager")
+    spawn_random(1, width - 1, 1, height - 2, villager, floorplan, creatures, level.num_villagers)
     
     chest = Object(0,0,"=", 15, "treasure chest")
     spawn_random(1, width - 1, 1, 5, chest, floorplan, objects, 1)
@@ -157,7 +164,7 @@ def spawn_random(minx, maxx, miny, maxy, obj, m, dest_list, count):
             o.x = randint(minx, maxx-1)
             o.y = randint(miny, maxy-1)
             obspot = m[o.y][o.x]
-            if obspot not in [1,2]:
+            if obspot not in [1,2,6]:
                 success = True
                 dest_list.append(o)
             
@@ -204,9 +211,27 @@ def get_gobbo_target(gobbo):
         tx = gobbo.target[0]
         ty = gobbo.target[1]        
     else:
-        tx = gobbo.x + randint(-1,1)
-        ty = gobbo.y + randint(-1,1)
+        tx, ty = wander(gobbo)
     return (tx,ty)
+
+def tick_villy(c, player, floorplan):
+    oldx = c.x
+    oldy = c.y
+    tx, ty = wander(c)
+    xmod, ymod = move_to_target(tx, ty, c.x, c.y)
+    c.x += xmod
+    c.y += ymod
+
+    if gobbo_invalid_move(c, floorplan, oldx, oldy):
+        c.y = oldy
+        c.x = oldx
+    
+
+
+def wander(c):
+    tx = c.x + randint(-1, 1)
+    ty = c.y + randint(-1, 1)
+    return tx, ty
 
 def bump_steps(c, oldx, oldy, m):
     tilenum = m[c.y][c.x]
@@ -322,7 +347,7 @@ def throw_rock(player, objects, creatures, stdscr, m):
         dx = -5
     elif inp == curses.KEY_RIGHT:
         dx = 5
-        
+
     news.append("Yeet!")
                            
     drop_first(lambda x: x.type == "rock", player.inv)
@@ -453,6 +478,7 @@ def init_colors():
     curses.init_color(9, 1000, 1000, 0)
     
     curses.init_color(14, 301, 376, 929)
+    curses.init_color(15, 603, 454, 243)
     
     
     
@@ -478,5 +504,9 @@ def init_colors():
     curses.init_pair(15, 9, curses.COLOR_BLACK)
     
     curses.init_pair(16, 14, curses.COLOR_BLACK)
+
+    curses.init_pair(17, 15, curses.COLOR_BLACK)
+
+
     
     
