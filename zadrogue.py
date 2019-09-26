@@ -3,22 +3,32 @@ from roguelib import *
 from random import randint
 from collections import namedtuple
 
-Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time")
+Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants")
+
+shopkeeper1 = Creature(47,3, "v", 17, "shoppo")
 
 levels = [
-    Level(m="floorplan_5.txt", num_gobbos=0, num_villagers=5, num_gold=2, time=2000),
-    Level(m="floorplan2.txt", num_gobbos=10, num_villagers=0, num_gold=5, time=150),
-    Level(m="floorplan3.txt", num_gobbos=10, num_villagers=0, num_gold=10, time=200),
-    Level(m="floorplan_4.txt", num_gobbos=10, num_villagers=0, num_gold=10, time=200),
-    Level(m="floorplan_5.txt", num_gobbos=0, num_villagers=5, num_gold=2, time=20000)
+    Level(m="floorplan.txt",
+          num_gobbos=5, num_villagers=0, num_gold=5,
+          time=150, inhabitants=[]),
+    Level(m="floorplan2.txt",
+          num_gobbos=10, num_villagers=0, num_gold=5,
+          time=150, inhabitants=[]),
+    Level(m="floorplan3.txt",
+          num_gobbos=10, num_villagers=0, num_gold=10,
+          time=200, inhabitants=[]),
+    Level(m="floorplan_4.txt",
+          num_gobbos=10, num_villagers=0, num_gold=10,
+          time=200, inhabitants=[]),
+    Level(m="floorplan_5.txt",
+          num_gobbos=0, num_villagers=5, num_gold=2,
+          time=20000, inhabitants=[shopkeeper1])
 ]
-
-
 
 
 def main(stdscr):
     inp = 0
-    current_level = 0
+    current_level = 4
     
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
@@ -41,6 +51,8 @@ def main(stdscr):
                     tick_gobbo(c,player,floorplan)
                 if c.type == "villager":
                     tick_villy(c,player,floorplan)
+                if c.type == "shoppo":
+                    tick_shoppo(c,player,floorplan)
 
             stdscr.addstr(height, 5, "NAMOFERO", curses.color_pair(10))
             stdscr.addstr(height, 20, "TIME LEFT-"+str(timer), curses.color_pair(10))

@@ -1,5 +1,5 @@
 import curses
-from random import randint
+from random import randint, choice
 from math import sqrt
 from copy import deepcopy
 
@@ -86,6 +86,10 @@ def change_level(level, inv = []):
     
     coin = Object(0,0,"$",15,"coin")
     spawn_random(1, width - 1, 1, height - 2, coin, floorplan, objects, coinum)
+
+    for i in level.inhabitants:
+        creatures.append(i)
+
     return (creatures, objects, floorplan, time)
 
 def its_opaque(tile_num, tiles):
@@ -183,6 +187,8 @@ def wakabal(tilenum, x, y, floorplan, critter):
     
     if tilenum != 1 and tilenum != 2:
         return True
+    elif critter.type == "shoppo" and tilenum == 4:
+        return False
     else:
         return False
     
@@ -214,6 +220,18 @@ def get_gobbo_target(gobbo):
         tx, ty = wander(gobbo)
     return (tx,ty)
 
+def tick_shoppo(c,player,floorplan):
+    oldx = c.x
+    oldy = c.y
+    tx, ty = wander(c)
+    xmod, ymod = move_to_target(tx, ty, c.x, c.y)
+    c.x += xmod
+    c.y += ymod
+    villager_sez(c, player)
+    if gobbo_invalid_move(c, floorplan, oldx, oldy):
+        c.y = oldy
+        c.x = oldx
+
 def tick_villy(c, player, floorplan):
     oldx = c.x
     oldy = c.y
@@ -221,11 +239,18 @@ def tick_villy(c, player, floorplan):
     xmod, ymod = move_to_target(tx, ty, c.x, c.y)
     c.x += xmod
     c.y += ymod
+    villager_sez(c, player)
 
     if gobbo_invalid_move(c, floorplan, oldx, oldy):
         c.y = oldy
         c.x = oldx
-    
+
+
+def villager_sez(c, player):
+    villy_speek = ["Gooday stranger, welcome to our modest little town of Brorldown.","I see you are loaded with stolen loot! Might I sugest you check out our magic item shops?","Oh its you, the notorious Namafero, raider of goblins! It is an honor to have you in our town...", "'Sup!"]
+
+    if distance(c, player) < 2:
+        news.append("Villager sez: " + choice(villy_speek))
 
 
 def wander(c):
