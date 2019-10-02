@@ -29,7 +29,7 @@ levels = [
 
 def main(stdscr):
     inp = 0
-    current_level = 4
+    current_level = 0
     
     curses.curs_set(False) # Disable blinking cursor
     init_colors()

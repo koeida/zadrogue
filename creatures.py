@@ -1,7 +1,7 @@
 from random import randint, choice
-from gamemap import wall_between, its_opaque, tiles
-from misc import distance, rotate_list
-from roguelib import offmap, news
+from gamemap import its_opaque, tiles, no_wall_between, offmap
+from misc import distance, rotate_list, between, anyslice
+from roguelib import *
 
 
 class Creature:
@@ -113,7 +113,7 @@ def gobbo_vision(gobbo, player, m):
         gobbo.distracted -= 1
         return
 
-    if is_visible_old(gobbo, player, m):
+    if is_visible(gobbo, player, m):
         gobbo.tile = "!"
         gobbo.target = (player.x, player.y)
     else:
@@ -165,57 +165,6 @@ def do_doors(x, y, m, a, b):
         m[y][x - 1] = b
 
 
-def is_visible_old(c, t, floorplan):
-    """Is t visible to c?"""
-    global status
-
-    if c.y == t.y:
-        row = floorplan[c.y]
-
-        # Look to the left
-        for cur_x in range(c.x, t.x - 1, -1):
-            if cur_x == t.x:
-                return True
-            cur_tile_num = row[cur_x]
-            if its_opaque(cur_tile_num, tiles):
-                break
-
-        # Look to the right
-        for cur_x in range(c.x, t.x + 1):
-            if cur_x == t.x:
-                return True
-            cur_tile_num = row[cur_x]
-            if its_opaque(cur_tile_num, tiles):
-                break
-    elif c.x == t.x:
-        columns = rotate_list(floorplan)
-
-        # FIX THIS
-        try:
-            column = list(columns[c.x])
-        except:
-            return
-        column.reverse()
-
-        # Look up
-        for cur_y in range(c.y, t.y - 1, -1):
-            cur_tile_num = column[cur_y]
-            if its_opaque(cur_tile_num, tiles):
-                break
-            if cur_y == t.y:
-                return True
-
-        # look down
-        for cur_y in range(c.y, t.y + 1):
-            if cur_y == t.y:
-                return True
-            cur_tile_num = column[cur_y]
-            if its_opaque(cur_tile_num, tiles):
-                break
-    else:
-        return False
-
-
 def wakabal(tilenum, x, y, floorplan, critter):
     # Is critter stuck? If so, make them unstuck and return false ("not wakabal")
     if critter.is_stuck:
@@ -252,29 +201,17 @@ def move_to_target(tx, ty, cx, cy):
 
     return (xmod, ymod)
 
-def is_visible(c, t, floorplan):
-    if c.y == t.y:
-        row = floorplan[c.y]
-        return wall_between(c.x,t.x,row)
-    elif c.x == t.x:
-        row = rotate_list(floorplan,3)[c.x]
-        return wall_between(c.y,t.y,row)
-    else:
-        return False
 
+def is_visible(c, t, m):
 
-floorplan_t = [[0,4,2],
-               [3,1,5],
-               [6,7,8]]
-foo = Creature(2, 0, None, None, None)
-bar = Creature(0, 0, None, None, None)
-assert(is_visible(foo,bar,floorplan_t))
-foo = Creature(0, 2, None, None, None)
-bar = Creature(0, 2, None, None, None)
-assert(is_visible(foo,bar,floorplan_t))
-foo = Creature(0, 1, None, None, None)
-bar = Creature(2, 1, None, None, None)
-assert(not is_visible(foo,bar,floorplan_t))
-foo = Creature(2, 1, None, None, None)
-bar = Creature(0, 1, None, None, None)
-assert(not is_visible(foo,bar,floorplan_t))
+    column_visible = False
+    if c.x == t.x:
+        sy = c.y if c.y < t.y else t.y
+        ey = c.y if c.y > t.y else t.y
+        vtiles = []
+        for y in range(sy, ey + 1):
+            vtiles.append(m[y][c.x])
+
+        column_visible = 1 not in vtiles and 2 not in vtiles
+    row_visibile = c.y == t.y and no_wall_between(t.y, t.x, c.x, m)
+    return column_visible or row_visibile

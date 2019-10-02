@@ -4,13 +4,20 @@ from random import randint
 import creatures
 from copy import deepcopy
 from display import display_news
-from gamemap import tiles, offmap, read_floorplan
+from gamemap import *
 from misc import distance, drop_first, any
 from objects import Object
+from rnews import *
 
 status = []
-news = ["Welcome to GOBBO THIEF!"]
 
+
+def read_floorplan(fname):
+    f = file(fname,"r")
+    lines = f.readlines()
+    lines = map(lambda l: map(int, list(l.strip())), lines)
+    f.close()
+    return lines
 
 def change_level(level, inv = []):
     floorplan_file = level.m
