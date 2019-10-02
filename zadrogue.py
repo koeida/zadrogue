@@ -1,7 +1,8 @@
-import curses
+from creatures import *
+from display import init_colors, draw_map
 from roguelib import *
-from random import randint
 from collections import namedtuple
+from misc import any
 
 Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants")
 
