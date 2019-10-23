@@ -1,5 +1,17 @@
 import curses
 
+def display_inv(screen, inv, width, show_numbers=False):
+    screen.addstr(0, width + 2, "Inventory", curses.color_pair(9))
+    screen.addstr(1, width + 1, "===========", curses.color_pair(9))
+
+    cur_i = 3
+    for o in inv:
+        if show_numbers:
+            screen.addstr(cur_i, width + 1, "%d) %s: %s" % (cur_i - 2,o.tile, o.type), curses.color_pair(o.color))
+        else:
+            screen.addstr(cur_i, width + 1, "%s: %s" % (o.tile, o.type), curses.color_pair(o.color))
+        cur_i += 1
+
 def draw_map(screen, m, tiles, x=0, y=0):
     for cy in range(len(m)):
         for cx in range(len(m[cy])):
@@ -20,6 +32,24 @@ def display_news(screen, news, width, height):
         screen.addstr(MAP_HEIGHT + cn + 1, 0, n, curses.color_pair(10 + cn))
         cn += 1
 
+def prompt(screen, height, message):
+    middle_height = int(height / 2) - 1
+    mlength = len(message) + 5
+    screen.addstr(middle_height,     5,               "*" * mlength)
+    screen.addstr(middle_height + 1, 5,               "*" + message)
+    screen.addstr(middle_height + 1, mlength + 4,"*")
+    screen.addstr(middle_height + 2, 5,               "*" * mlength)
+    return screen.getch()
+
+
+def init_rgb(n, r, g, b):
+    rpercent = r / 255.0
+    gpercent = g / 255.0
+    bpercent = b / 255.0
+    r = int(1000 * rpercent)
+    g = int(1000 * gpercent)
+    b = int(1000 * bpercent)
+    curses.init_color(n, r, g, b)
 
 def init_colors():
     curses.init_color(2, 600, 400, 255)
@@ -40,6 +70,8 @@ def init_colors():
 
     curses.init_color(14, 301, 376, 929)
     curses.init_color(15, 603, 454, 243)
+
+    init_rgb(16, 135, 42, 193)
 
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(2, 2, curses.COLOR_BLACK)  # walls, brown on black
@@ -62,3 +94,5 @@ def init_colors():
     curses.init_pair(16, 14, curses.COLOR_BLACK)
 
     curses.init_pair(17, 15, curses.COLOR_BLACK)
+
+    curses.init_pair(18, 16, curses.COLOR_BLACK)

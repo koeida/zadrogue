@@ -1,5 +1,16 @@
 from math import sqrt
 
+def lower(x,y):
+    return x if x < y else y
+
+def higher(x,y):
+    return x if x > y else y
+
+def ordered(x,y):
+    low = lower(x,y)
+    high = higher(x,y)
+    return low,high
+
 def distance(c1, c2):
     a = c1.x - c2.x
     b = c1.y - c2.y

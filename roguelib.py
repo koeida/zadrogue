@@ -3,7 +3,7 @@ from random import randint
 
 import creatures
 from copy import deepcopy
-from display import display_news
+from display import display_news, prompt
 from gamemap import *
 from misc import distance, drop_first, any
 from objects import Object
@@ -25,7 +25,7 @@ def change_level(level, inv = []):
     coinum = level.num_gold
     time = level.time
     cs = []
-    objects = []
+    objects = level.objects
     floorplan = read_floorplan(floorplan_file)
     
     width = len(floorplan[1])
@@ -121,6 +121,20 @@ def keyboard_input(inp, player, m, objects, cs, stdscr):
         creatures.do_doors(player.x, player.y, m, 4, 2)
     elif inp == ord('t') and any(lambda o: o.type == "rock", player.inv):
         throw_rock(player, objects, cs, stdscr, m)
+    elif inp == ord('u'):
+        wvich1 = prompt(stdscr, 30, "What item do you want to use?")
+        wvich1 = wvich1 - 48 - 1
+        if wvich1 in range(10):
+            # Convert it to an int
+            if wvich1 < len(player.inv):
+                # Set a variable to the object we wanna use
+                useditem = player.inv[wvich1]
+                useditem.effect(player, cs, m)
+                player.inv.remove(useditem)
+                # Remove it from inventory
+
+
+
         
     if offmap(player.x, player.y, m) == False:
         tilenum = m[player.y][player.x]

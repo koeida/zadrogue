@@ -1,35 +1,63 @@
 from creatures import *
-from display import init_colors, draw_map
+from display import init_colors, draw_map, prompt, display_inv
 from roguelib import *
 from collections import namedtuple
 from misc import any
+from objects import health_potion, teleport_ring
 
-Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants")
+Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants objects")
 
 shopkeeper1 = Creature(47,3, "v", 17, "shoppo")
+
+shield = Object(47,2, "0", 11, "shield", True, 3)
+town_objects = [shield]
+boots = Object(46,2, "L", 15, "boots of Jesus", True, 3)
+town_objects.append(boots)
+ring = Object(45,2, "o", 15, "ring of teleportation", True, 4, teleport_ring)
+town_objects.append(ring)
+potion_inv = Object(44,2, "b", 18, "potion of invisibility", True, 4)
+town_objects.append(potion_inv)
+potion_spe = Object(47,4, "b", 16, "potion of speed", True, 3)
+town_objects.append(potion_spe)
+caltrops = Object(46,4, "*", 12, "caltrops", True, 3)
+town_objects.append(caltrops)
+potion_hel = Object(45,4, "b", 1, "health potion", True, 3, health_potion)
+town_objects.append(potion_hel)
+
 
 levels = [
     Level(m="floorplan.txt",
           num_gobbos=5, num_villagers=0, num_gold=5,
-          time=150, inhabitants=[]),
+          time=150, inhabitants=[], objects=[]),
     Level(m="floorplan2.txt",
           num_gobbos=10, num_villagers=0, num_gold=5,
-          time=150, inhabitants=[]),
+          time=150, inhabitants=[], objects=[]),
     Level(m="floorplan3.txt",
           num_gobbos=10, num_villagers=0, num_gold=10,
-          time=200, inhabitants=[]),
+          time=200, inhabitants=[], objects=[]),
     Level(m="floorplan_4.txt",
           num_gobbos=10, num_villagers=0, num_gold=10,
-          time=200, inhabitants=[]),
+          time=200, inhabitants=[], objects=[]),
     Level(m="floorplan_5.txt",
-          num_gobbos=0, num_villagers=5, num_gold=2,
-          time=20000, inhabitants=[shopkeeper1])
+          num_gobbos=0, num_villagers=5, num_gold=200, #num_gold=2,
+          time=20000, inhabitants=[shopkeeper1], objects=town_objects)
 ]
+
+def spend_coins(inv, cost):
+    removes = []
+    for o in inv:
+        if o.type == "coin":
+            removes.append(o)
+            cost -= 1
+            if cost == 0:
+                break
+    for r in removes:
+        inv.remove(r)
 
 
 def main(stdscr):
     inp = 0
-    current_level = 0
+    current_level = 4
     
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
@@ -97,13 +125,7 @@ def main(stdscr):
             
             display_news(stdscr, news, width, height)
             
-            stdscr.addstr(0, width + 2, "Inventory", curses.color_pair(9))
-            stdscr.addstr(1, width + 1, "===========", curses.color_pair(9))
-            
-            cur_i = 3
-            for o in player.inv:
-                stdscr.addstr(cur_i, width + 1, "%s: %s" % (o.tile, o.type), curses.color_pair(o.color))
-                cur_i += 1
+            display_inv(stdscr, player.inv, width, True)
 
             stdscr.addstr(height, 40, "health " + ("+" * player.health), curses.color_pair(1))
                 
@@ -117,8 +139,23 @@ def main(stdscr):
         keyboard_input(inp, player, floorplan, objects, creatures, stdscr)
         for o in objects:
             if player.x == o.x and player.y == o.y:
-                objects.remove(o)
-                player.inv.append(o)
+                if o.buyable == False:
+                    objects.remove(o)
+                    player.inv.append(o)
+                else:
+                    playercoinz = filter(lambda i: i.type == "coin", player.inv)
+                    if len(playercoinz) >= o.cost:
+                        prompt_str = "Do you want to buy this " + o.type + "? It costs " + str(o.cost) + " coins."
+                        resp = prompt(stdscr, height, prompt_str)
+                        if resp == ord("y"):
+                            player.inv.append(o)
+                            objects.remove(o)
+                            spend_coins(player.inv, o.cost)
+
+                    else:
+                        prompt_str = "You dont have enough money to buy this " + o.type + "."
+                        prompt(stdscr, height, prompt_str)
+
                 
         # Are we at the end of the level?
         tilenum = floorplan[player.y][player.x]

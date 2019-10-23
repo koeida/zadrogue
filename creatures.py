@@ -1,6 +1,6 @@
 from random import randint, choice
 from gamemap import its_opaque, tiles, no_wall_between, offmap
-from misc import distance, rotate_list, between, anyslice
+from misc import ordered
 from roguelib import *
 
 
@@ -18,6 +18,8 @@ class Creature:
         self.did_attack = False
         self.is_stuck = False
         self.distracted = 0
+        self.has_talked = False
+        self.invisotimer = 0
 
 
 def get_gobbo_target(gobbo):
@@ -62,9 +64,9 @@ def villager_sez(c, player):
                    "Oh its you, the notorious Namafero, raider of goblins! It is an honor to have you in our town...",
                    "'Sup!"]
 
-    if distance(c, player) < 2:
+    if distance(c, player) < 2 and c.has_talked == False:
         news.append("Villager sez: " + choice(villy_speek))
-
+        c.has_talked = True
 
 def wander(c):
     tx = c.x + randint(-1, 1)
@@ -173,10 +175,11 @@ def wakabal(tilenum, x, y, floorplan, critter):
     if tilenum == 8:
         critter.is_stuck = True
 
-    if tilenum != 1 and tilenum != 2:
-        return True
-    elif critter.type == "shoppo" and tilenum == 4:
+    if critter.type == "shoppo" and tilenum == 4:
+        news.append("rowdely rowt, shopos got out!")
         return False
+    elif tilenum != 1 and tilenum != 2:
+        return True
     else:
         return False
 
@@ -201,17 +204,18 @@ def move_to_target(tx, ty, cx, cy):
 
     return (xmod, ymod)
 
-
 def is_visible(c, t, m):
+    def is_visible_(m, n1, n2, f):
+        open_tiles = filter(lambda tt: tiles[tt][2], tiles)
+        visible = lambda l: len(set(l) - set(open_tiles)) == 0
 
-    column_visible = False
+        start, end = ordered(n1, n2)
+        tiles_between = [f(n,m) for n in range(start, end + 1)]
+        return visible(tiles_between)
+
     if c.x == t.x:
-        sy = c.y if c.y < t.y else t.y
-        ey = c.y if c.y > t.y else t.y
-        vtiles = []
-        for y in range(sy, ey + 1):
-            vtiles.append(m[y][c.x])
-
-        column_visible = 1 not in vtiles and 2 not in vtiles
-    row_visibile = c.y == t.y and no_wall_between(t.y, t.x, c.x, m)
-    return column_visible or row_visibile
+        return is_visible_(m, c.y, t.y, lambda n,m: m[n][c.x])
+    elif c.y == t.y:
+        return is_visible_(m, c.x, t.x, lambda n,m: m[c.y][n])
+    else:
+        return False
