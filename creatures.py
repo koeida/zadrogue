@@ -9,6 +9,7 @@ class Creature:
         self.x = x
         self.y = y
         self.color = color
+        self.curcolor = color
         self.tile = tile
         self.target = None
         self.type = type
@@ -20,6 +21,7 @@ class Creature:
         self.distracted = 0
         self.has_talked = False
         self.invisotimer = 0
+        self.coins = 0
 
 
 def get_gobbo_target(gobbo):
@@ -115,20 +117,20 @@ def gobbo_vision(gobbo, player, m):
         gobbo.distracted -= 1
         return
 
-    if is_visible(gobbo, player, m):
+    if is_visible(gobbo, player, m) and player.invisotimer <= 0:
         gobbo.tile = "!"
         gobbo.target = (player.x, player.y)
     else:
         gobbo.tile = "&"
 
 
-def tick_gobbo(gobbo, player, m):
-    move_gobbo(gobbo, player, m)
+def tick_gobbo(gobbo, player, m, objects):
+    move_gobbo(gobbo, player, m, objects)
     gobbo_attack(gobbo, player, m)
     gobbo_vision(gobbo, player, m)
 
 
-def move_gobbo(gobbo, player, m):
+def move_gobbo(gobbo, player, m, objects):
     oldx = gobbo.x
     oldy = gobbo.y
 
@@ -150,6 +152,12 @@ def move_gobbo(gobbo, player, m):
     if gobbo_invalid_move(gobbo, m, oldx, oldy):
         gobbo.y = oldy
         gobbo.x = oldx
+
+    caltrops = filter(lambda o: o.type == "caltrops", objects)
+    for cal in caltrops:
+        if gobbo.x == cal.x and gobbo.y == cal.y:
+            gobbo.is_stuck = True
+            #Note: gobbos staying stuck
 
 
 def do_doors(x, y, m, a, b):

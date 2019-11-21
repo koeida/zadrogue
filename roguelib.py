@@ -6,7 +6,7 @@ from copy import deepcopy
 from display import display_news, prompt
 from gamemap import *
 from misc import distance, drop_first, any
-from objects import Object
+from objects import Object, caltropz
 from rnews import *
 
 status = []
@@ -19,7 +19,7 @@ def read_floorplan(fname):
     f.close()
     return lines
 
-def change_level(level, inv = []):
+def change_level(level, inv = [], coins=0):
     floorplan_file = level.m
     gobbonum = level.num_gobbos
     coinum = level.num_gold
@@ -34,9 +34,13 @@ def change_level(level, inv = []):
      # x, y, image, color
     
     player = creatures.Creature(18, 17, "@", 1, "player")
+    player.coins = coins
     cs.append(player)
     
     player.inv = inv
+    caltrops = Object(46, 4, "*", 12, "caltrops", True, 3, caltropz)
+    player.inv.append(caltrops)
+
     rawck = Object(0,0,".", 12, "rock")
     player.inv.append(rawck)
     
@@ -129,7 +133,7 @@ def keyboard_input(inp, player, m, objects, cs, stdscr):
             if wvich1 < len(player.inv):
                 # Set a variable to the object we wanna use
                 useditem = player.inv[wvich1]
-                useditem.effect(player, cs, m)
+                useditem.effect(player, cs, m, objects)
                 player.inv.remove(useditem)
                 # Remove it from inventory
 

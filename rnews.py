@@ -1,1 +1,1 @@
-news = ["Welcome to zadrogue!!!"]
+news = ["Welcome to Gobbothief!!!"]
