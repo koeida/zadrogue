@@ -22,6 +22,7 @@ class Creature:
         self.has_talked = False
         self.invisotimer = 0
         self.coins = 0
+        self.caltroppotimer = 0
 
 
 def get_gobbo_target(gobbo):
@@ -33,7 +34,7 @@ def get_gobbo_target(gobbo):
     return (tx, ty)
 
 
-def tick_shoppo(c, player, floorplan):
+def tick_shoppo(c, player, floorplan, objects):
     oldx = c.x
     oldy = c.y
     tx, ty = wander(c)
@@ -41,12 +42,12 @@ def tick_shoppo(c, player, floorplan):
     c.x += xmod
     c.y += ymod
     villager_sez(c, player)
-    if gobbo_invalid_move(c, floorplan, oldx, oldy):
+    if gobbo_invalid_move(c, floorplan, oldx, oldy, objects):
         c.y = oldy
         c.x = oldx
 
 
-def tick_villy(c, player, floorplan):
+def tick_villy(c, player, floorplan, objects):
     oldx = c.x
     oldy = c.y
     tx, ty = wander(c)
@@ -55,7 +56,7 @@ def tick_villy(c, player, floorplan):
     c.y += ymod
     villager_sez(c, player)
 
-    if gobbo_invalid_move(c, floorplan, oldx, oldy):
+    if gobbo_invalid_move(c, floorplan, oldx, oldy, objects):
         c.y = oldy
         c.x = oldx
 
@@ -85,12 +86,12 @@ def bump_steps(c, oldx, oldy, m):
     return False
 
 
-def gobbo_invalid_move(gobbo, m, oldx, oldy):
+def gobbo_invalid_move(gobbo, m, oldx, oldy, objects):
     if offmap(gobbo.x, gobbo.y, m):
         return True
 
     tilenum = m[gobbo.y][gobbo.x]
-    if not wakabal(tilenum, gobbo.x, gobbo.y, m, gobbo):
+    if not wakabal(tilenum, gobbo.x, gobbo.y, m, gobbo, objects):
         return True
 
     if bump_steps(gobbo, oldx, oldy, m):
@@ -149,15 +150,11 @@ def move_gobbo(gobbo, player, m, objects):
     gobbo.y += ymod
     gobbo.target_steps += 1
 
-    if gobbo_invalid_move(gobbo, m, oldx, oldy):
+    if gobbo_invalid_move(gobbo, m, oldx, oldy, objects):
         gobbo.y = oldy
         gobbo.x = oldx
 
-    caltrops = filter(lambda o: o.type == "caltrops", objects)
-    for cal in caltrops:
-        if gobbo.x == cal.x and gobbo.y == cal.y:
-            gobbo.is_stuck = True
-            #Note: gobbos staying stuck
+
 
 
 def do_doors(x, y, m, a, b):
@@ -175,7 +172,7 @@ def do_doors(x, y, m, a, b):
         m[y][x - 1] = b
 
 
-def wakabal(tilenum, x, y, floorplan, critter):
+def wakabal(tilenum, x, y, floorplan, critter, objects):
     # Is critter stuck? If so, make them unstuck and return false ("not wakabal")
     if critter.is_stuck:
         critter.is_stuck = False
@@ -183,8 +180,19 @@ def wakabal(tilenum, x, y, floorplan, critter):
     if tilenum == 8:
         critter.is_stuck = True
 
+    if critter.caltroppotimer >= 0:
+        critter.caltroppotimer -= 1
+        return False
+
+
+    caltrops = filter(lambda o: o.type == "caltrops", objects)
+    for cal in caltrops:
+        if critter.x == cal.x and critter.y == cal.y:
+            if critter.type != "player":
+                critter.caltroppotimer = 8
+
+
     if critter.type == "shoppo" and tilenum == 4:
-        news.append("rowdely rowt, shopos got out!")
         return False
     elif tilenum != 1 and tilenum != 2:
         return True

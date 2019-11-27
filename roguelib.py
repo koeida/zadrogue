@@ -19,7 +19,7 @@ def read_floorplan(fname):
     f.close()
     return lines
 
-def change_level(level, inv = [], coins=0):
+def change_level(level, inv = [], coins=100):
     floorplan_file = level.m
     gobbonum = level.num_gobbos
     coinum = level.num_gold
@@ -142,7 +142,7 @@ def keyboard_input(inp, player, m, objects, cs, stdscr):
         
     if offmap(player.x, player.y, m) == False:
         tilenum = m[player.y][player.x]
-        if not creatures.wakabal(tilenum, player.x, player.y, m, player):
+        if not creatures.wakabal(tilenum, player.x, player.y, m, player, objects):
             player.x = oldx
             player.y = oldy
         if (m[oldy][oldx] not in [5,6,7]) and tilenum in [6,7]:

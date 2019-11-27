@@ -3,7 +3,7 @@ from display import init_colors, draw_map, prompt, display_inv
 from roguelib import *
 from collections import namedtuple
 from misc import any
-from objects import health_potion, teleport_ring, caltropz, inviso_potion
+from objects import health_potion, teleport_ring, caltropz, inviso_potion, ghost_toga
 
 Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants objects name")
 
@@ -23,6 +23,8 @@ caltrops = Object(46,4, "*", 12, "caltrops", True, 3, caltropz)
 town_objects.append(caltrops)
 potion_hel = Object(45,4, "b", 1, "health potion", True, 3, health_potion)
 town_objects.append(potion_hel)
+phasecloak = Object(44,4, "M", 9, "toga of ghostlyness", True, 5, ghost_toga)
+town_objects.append(phasecloak)
 
 
 levels = [
@@ -46,7 +48,7 @@ levels = [
 
 def main(stdscr):
     inp = 0
-    current_level = 0
+    current_level = 4
 
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
@@ -79,9 +81,9 @@ def main(stdscr):
                 if c.type == "gobbo":
                     tick_gobbo(c,player,floorplan, objects)
                 if c.type == "villager":
-                    tick_villy(c,player,floorplan)
+                    tick_villy(c,player,floorplan, objects)
                 if c.type == "shoppo":
-                    tick_shoppo(c,player,floorplan)
+                    tick_shoppo(c,player,floorplan, objects)
 
             stdscr.addstr(height, 5, "coins-"+ str(player.coins), curses.color_pair(15))
             stdscr.addstr(height, 20, "TIME LEFT-"+str(timer), curses.color_pair(10))

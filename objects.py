@@ -20,6 +20,13 @@ def caltropz(player, cs, m, os):
     caltrop = Object(player.x, player.y, "*", 12, "caltrops", False, 3, pickupable=False)
     os.append(caltrop)
 
+def ghost_toga(player, cs, m, os):
+    #player.phaseotimer = 10
+    player.tile = "M"
+    player.color = 9
+
+
+
 
 class Object:
     def __init__(self, x, y, tile, color, type, buyable=False, cost=0, effect=noeffect, pickupable=True):
