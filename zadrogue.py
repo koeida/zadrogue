@@ -3,21 +3,23 @@ from display import init_colors, draw_map, prompt, display_inv
 from roguelib import *
 from collections import namedtuple
 from misc import any
-from objects import health_potion, teleport_ring, caltropz, inviso_potion, ghost_toga
+from objects import health_potion, teleport_ring, caltropz, inviso_potion, ghost_toga, jesus_bootz, speed_potion
 
 Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants objects name")
 
 shopkeeper1 = Creature(47,3, "v", 17, "shoppo")
+shopkeeper1.speek = "Welcome to David Gizbob's Magical Gizmos and Thingamabobs! How can I help you?"
+
 
 shield = Object(47,2, "0", 11, "shield", True, 3)
 town_objects = [shield]
-boots = Object(46,2, "L", 15, "boots of Jesus", True, 3)
+boots = Object(46,2, "L", 15, "boots of Jesus", True, 3, jesus_bootz)
 town_objects.append(boots)
 ring = Object(45,2, "o", 15, "ring of teleportation", True, 4, teleport_ring)
 town_objects.append(ring)
 potion_inv = Object(44,2, "b", 18, "potion of invisibility", True, 4, inviso_potion)
 town_objects.append(potion_inv)
-potion_spe = Object(47,4, "b", 16, "potion of speed", True, 3)
+potion_spe = Object(47,4, "b", 16, "potion of speed", True, 3, speed_potion)
 town_objects.append(potion_spe)
 caltrops = Object(46,4, "*", 12, "caltrops", True, 3, caltropz)
 town_objects.append(caltrops)
@@ -60,30 +62,36 @@ def main(stdscr):
     while(inp != 113): # Quit game if player presses "q"
         stdscr.clear()
         player = list(filter(lambda c: c.type == "player", creatures))[0]
-        timer -= 1
+        if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
+            timer -= 1
         for c in creatures:
-            c.invisotimer -= 1
             if c.invisotimer > 0:
-                # Get the tile number at the creature's x and y coordinate
-                tilenum = floorplan[c.y][c.x]
-                invisocolor = tiles[tilenum][1]
-                # Set curcolor equal to that color
-                c.curcolor = invisocolor
-            else:
-                c.curcolor = c.color
+                c.invisotimer -= 1
+                if c.invisotimer == 0:
+                    c.curcolor = c.color  # Bug: now curcolor doesn't work
+                else:
+                    # Get the tile number at the creature's x and y coordinate
+                    tilenum = floorplan[c.y][c.x]
+                    invisocolor = tiles[tilenum][1]
+                    # Set curcolor equal to that color
+                    c.curcolor = invisocolor
+        if player.speedtimer > 0:
+            player.speedtimer -= 1
+
 
 
         # if player is alive, do all the things
         if player.health > 0 and timer > 0:
             # creature movement    ]]]]
             player.status = "safe"
-            for c in creatures:
-                if c.type == "gobbo":
-                    tick_gobbo(c,player,floorplan, objects)
-                if c.type == "villager":
-                    tick_villy(c,player,floorplan, objects)
-                if c.type == "shoppo":
-                    tick_shoppo(c,player,floorplan, objects)
+            if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
+                for c in creatures:
+                    if c.type == "gobbo":
+                        tick_gobbo(c,player,floorplan, objects)
+                    if c.type == "villager":
+                        tick_villy(c,player,floorplan, objects)
+                    if c.type == "shoppo":
+                        tick_shoppo(c,player,floorplan, objects)
 
             stdscr.addstr(height, 5, "coins-"+ str(player.coins), curses.color_pair(15))
             stdscr.addstr(height, 20, "TIME LEFT-"+str(timer), curses.color_pair(10))

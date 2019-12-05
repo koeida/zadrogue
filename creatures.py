@@ -23,6 +23,10 @@ class Creature:
         self.invisotimer = 0
         self.coins = 0
         self.caltroppotimer = 0
+        self.phaseotimer = 0
+        self.jesustimer = 0
+        self.speedtimer = 0
+
 
 
 def get_gobbo_target(gobbo):
@@ -62,13 +66,9 @@ def tick_villy(c, player, floorplan, objects):
 
 
 def villager_sez(c, player):
-    villy_speek = ["Gooday stranger, welcome to our modest little town of Brorldown.",
-                   "I see you are loaded with stolen loot! Might I sugest you check out our magic item shops?",
-                   "Oh its you, the notorious Namafero, raider of goblins! It is an honor to have you in our town...",
-                   "'Sup!"]
 
     if distance(c, player) < 2 and c.has_talked == False:
-        news.append("Villager sez: " + choice(villy_speek))
+        news.append("Villager sez: " + c.speek)
         c.has_talked = True
 
 def wander(c):
@@ -177,12 +177,22 @@ def wakabal(tilenum, x, y, floorplan, critter, objects):
     if critter.is_stuck:
         critter.is_stuck = False
         return False
-    if tilenum == 8:
+    if tilenum == 8 and critter.jesustimer <= 0:
         critter.is_stuck = True
+    else:
+        critter.jesustimer -= 1
 
     if critter.caltroppotimer >= 0:
         critter.caltroppotimer -= 1
         return False
+
+    if critter.phaseotimer > 0:
+        critter.phaseotimer -=1
+        if critter.phaseotimer == 0:
+            critter.tile = "@"
+            critter.curcolor = critter.color
+        return True
+
 
 
     caltrops = filter(lambda o: o.type == "caltrops", objects)
@@ -191,13 +201,14 @@ def wakabal(tilenum, x, y, floorplan, critter, objects):
             if critter.type != "player":
                 critter.caltroppotimer = 8
 
-
+    t = tiles[tilenum]
+    t_icon, t_color, t_walkable = t
     if critter.type == "shoppo" and tilenum == 4:
         return False
-    elif tilenum != 1 and tilenum != 2:
-        return True
-    else:
-        return False
+    return t_walkable
+
+
+
 
 
 def move_to_target(tx, ty, cx, cy):

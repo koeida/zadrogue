@@ -21,10 +21,15 @@ def caltropz(player, cs, m, os):
     os.append(caltrop)
 
 def ghost_toga(player, cs, m, os):
-    #player.phaseotimer = 10
+    player.phaseotimer = 10
     player.tile = "M"
-    player.color = 9
+    player.curcolor = 9
 
+def jesus_bootz(player, cs, m, os):
+    player.jesustimer = 20
+
+def speed_potion(player, cs, m, os):
+    player.speedtimer = 15
 
 
 

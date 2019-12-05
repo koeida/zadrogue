@@ -1,5 +1,5 @@
 import curses
-from random import randint
+from random import randint, choice
 
 import creatures
 from copy import deepcopy
@@ -49,6 +49,14 @@ def change_level(level, inv = [], coins=100):
 
     villager = creatures.Creature(0, 0, "v", 17, "villager")
     spawn_random(1, width - 1, 1, height - 2, villager, floorplan, cs, level.num_villagers)
+    for v in cs:
+        if v.type == "villager":
+            speeches = ["Gooday stranger, welcome to our modest little town of Brorldown.",
+                        "I see you are loaded with stolen loot! Might I sugest you check out our magic item shops?",
+                        "Oh its you, the notorious Namafero, raider of goblins! It is an honor to have you in our town...",
+                        "'Sup!",
+                        "I hope you enjoy your stay here, adventurer!"]
+            v.speek = choice(speeches)
     
     chest = Object(0,0,"=", 15, "treasure chest")
     spawn_random(1, width - 1, 1, 5, chest, floorplan, objects, 1)
