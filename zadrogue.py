@@ -69,98 +69,75 @@ def main(stdscr):
             death_screen(height, stdscr, width)
             break
 
-        if player.health > 0 and timer > 0:
-            # creature movement    ]]]]
-            player.status = "safe"
-            if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
-                for c in creatures:
-                    if c.type == "gobbo":
-                        tick_gobbo(c,player,floorplan, objects)
-                    if c.type == "villager":
-                        tick_villy(c,player,floorplan, objects)
-                    if c.type == "shoppo" or c.type == "wizardio":
-                        tick_shoppo(c,player,floorplan, objects)
-                    if c.type == "kart":
-                        tick_kart(c, floorplan)
+
+        # creature movement    ]]]]
+        player.status = "safe"
+        if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
+            tick_creatures(creatures, floorplan, objects, player)
 
 
 
 
-            # Draw player info line
-            gobbos = filter(lambda c: c.tile == "&" or c.tile =="!", creatures)
-            gobbo_seeing = filter(lambda c: c.tile == "!", gobbos)
-            gobbos_near = any(lambda gobbo: distance(gobbo, player) < 3, gobbos)
-            
-            yellowlert = filter(lambda g: g.target != None, gobbos)
-            if len(gobbo_seeing) > 0:
-                player_status = "unsafe"
-                status_color = 6
-                status_symbol = " ! "
-            elif len(yellowlert) > 0 or gobbos_near:
-                player_status = "danger"
-                status_color = 7
-                status_symbol = " ? "
-            else:
-                player_status = "safe"
-                status_color = 5
-                status_symbol = " ~ "
+        # Draw player info/visibility alert
+        status_color, status_symbol = generate_alert(creatures, player)
+        stdscr.addstr(height, 0, status_symbol, curses.color_pair(status_color))
+        stdscr.addstr(height, 5, "coins-" + str(player.coins), curses.color_pair(15))
+        stdscr.addstr(height, 20, "TIME LEFT-" + str(timer), curses.color_pair(10))
+        draw_map(stdscr, floorplan, tiles)
 
-            stdscr.addstr(height, 5, "coins-" + str(player.coins), curses.color_pair(15))
-            stdscr.addstr(height, 20, "TIME LEFT-" + str(timer), curses.color_pair(10))
-            draw_map(stdscr, floorplan, tiles)
+        # Draw all creatures
+        for c in creatures:
+            stdscr.addstr(c.y, c.x, c.tile, curses.color_pair(c.curcolor))
 
-            # Draw all creatures
-            for c in creatures:
-                stdscr.addstr(c.y, c.x, c.tile, curses.color_pair(c.curcolor))
+        for o in objects:
+            stdscr.addstr(o.y, o.x, o.tile, curses.color_pair(o.color))
 
-            for o in objects:
-                stdscr.addstr(o.y, o.x, o.tile, curses.color_pair(o.color))
 
-            stdscr.addstr(height, 0, status_symbol, curses.color_pair(status_color))
 
-            status_y = 25
-            csy = 0
+        status_y = 25
+        csy = 0
 
-            display_news(stdscr, news, width, height)
+        display_news(stdscr, news, width, height)
 
-            display_inv(stdscr, player.inv, width, True)
+        display_inv(stdscr, player.inv, width, True)
 
-            stdscr.addstr(height, 40, "health " + ("+" * player.health), curses.color_pair(1))
+        stdscr.addstr(height, 40, "health " + ("+" * player.health), curses.color_pair(1))
 
-            stdscr.refresh()
+        stdscr.refresh()
 
-            #up to here: always do these things
-            inp = stdscr.getch()  # "Get character" -- pauses and waits for player to type a key
-            keyboard_input(inp, player, floorplan, objects, creatures, stdscr)
-            if current_level == 0 and player.y == 0:
-                current_level += 1
-                player.health = 3
-                news.append("Level " + str(current_level + 1) + ", " + levels[current_level].name + "...")
 
-                creatures, objects, floorplan, timer = change_level(levels[current_level], player.inv,player.coins)
+        inp = stdscr.getch()  # "Get character" -- pauses and waits for player to type a key
+        keyboard_input(inp, player, floorplan, objects, creatures, stdscr)
 
-                width = len(floorplan[1])
-                height = len(floorplan)
-            for o in objects:
-                if player.x == o.x and player.y == o.y and o.pickupable == True:
-                    if o.buyable == False:
-                        objects.remove(o)
-                        if o.type == "coin":
-                            player.coins +=1
-                        else:
-                            player.inv.append(o)
+        if current_level == 0 and player.y == 0:
+            current_level += 1
+            player.health = 3
+            news.append("Level " + str(current_level + 1) + ", " + levels[current_level].name + "...")
+
+            creatures, objects, floorplan, timer = change_level(levels[current_level], player.inv,player.coins)
+
+            width = len(floorplan[1])
+            height = len(floorplan)
+        for o in objects:
+            if player.x == o.x and player.y == o.y and o.pickupable == True:
+                if o.buyable == False:
+                    objects.remove(o)
+                    if o.type == "coin":
+                        player.coins +=1
                     else:
-                        if player.coins >= o.cost:
-                            prompt_str = "Do you want to buy this " + o.type + "? It costs " + str(o.cost) + " coins."
-                            resp = prompt(stdscr, height, prompt_str)
-                            if resp == ord("y"):
-                                player.inv.append(o)
-                                objects.remove(o)
-                                player.coins -= o.cost
+                        player.inv.append(o)
+                else:
+                    if player.coins >= o.cost:
+                        prompt_str = "Do you want to buy this " + o.type + "? It costs " + str(o.cost) + " coins."
+                        resp = prompt(stdscr, height, prompt_str)
+                        if resp == ord("y"):
+                            player.inv.append(o)
+                            objects.remove(o)
+                            player.coins -= o.cost
 
-                        else:
-                            prompt_str = "You dont have enough money to buy this " + o.type + "."
-                            prompt(stdscr, height, prompt_str)
+                    else:
+                        prompt_str = "You dont have enough money to buy this " + o.type + "."
+                        prompt(stdscr, height, prompt_str)
 
 
             # Are we at the end of the level?
@@ -172,6 +149,38 @@ def main(stdscr):
                 creatures, objects, floorplan, timer = change_level(levels[current_level], player.inv, player.coins)
                 width = len(floorplan[1])
                 height = len(floorplan)
+
+
+def generate_alert(creatures, player):
+    gobbos = filter(lambda c: c.tile == "&" or c.tile == "!", creatures)
+    gobbo_seeing = filter(lambda c: c.tile == "!", gobbos)
+    gobbos_near = any(lambda gobbo: distance(gobbo, player) < 3, gobbos)
+    yellowlert = filter(lambda g: g.target != None, gobbos)
+    if len(gobbo_seeing) > 0:
+        player_status = "unsafe"
+        status_color = 6
+        status_symbol = " ! "
+    elif len(yellowlert) > 0 or gobbos_near:
+        player_status = "danger"
+        status_color = 7
+        status_symbol = " ? "
+    else:
+        player_status = "safe"
+        status_color = 5
+        status_symbol = " ~ "
+    return status_color, status_symbol
+
+
+def tick_creatures(creatures, floorplan, objects, player):
+    for c in creatures:
+        if c.type == "gobbo":
+            tick_gobbo(c, player, floorplan, objects)
+        if c.type == "villager":
+            tick_villy(c, player, floorplan, objects)
+        if c.type == "shoppo" or c.type == "wizardio":
+            tick_shoppo(c, player, floorplan, objects)
+        if c.type == "kart":
+            tick_kart(c, floorplan)
 
 
 def death_screen(height, stdscr, width):
