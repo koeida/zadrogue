@@ -65,6 +65,10 @@ def main(stdscr):
         invisibility_check(player, floorplan)
 
         # if player is alive, do all the things
+        if player.health <= 0 and timer <= 0:
+            death_screen(height, stdscr, width)
+            break
+
         if player.health > 0 and timer > 0:
             # creature movement    ]]]]
             player.status = "safe"
@@ -170,11 +174,12 @@ def main(stdscr):
                 height = len(floorplan)
 
 
-
-        else:
-            stdscr.addstr(height / 2, width / 2 - 9, "GAME OVER", curses.color_pair(1))
-            stdscr.addstr(height / 2 + 1, width / 2 - 10, "===========", curses.color_pair(1))
-            stdscr.refresh()
+def death_screen(height, stdscr, width):
+    stdscr.clear()
+    stdscr.addstr(height / 2, width / 2 - 9, "GAME OVER", curses.color_pair(1))
+    stdscr.addstr(height / 2 + 1, width / 2 - 10, "===========", curses.color_pair(1))
+    stdscr.refresh()
+    inp = stdscr.getch()
 
 
 def update_timers(creatures, player, timer):
