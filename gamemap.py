@@ -10,7 +10,8 @@ tiles = { 0: (".", 9, True),
           6: ("]", 11,True),
           7: ("]", 12, True),
           8: ("~",16,True),
-          9: ("H",11,False),}
+          9: ("H",11,False),
+          "a": ("+",11,True),}
 
 def offmap(x, y, floorplan):
     width = len(floorplan[1])

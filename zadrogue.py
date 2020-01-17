@@ -3,34 +3,25 @@ from display import init_colors, draw_map, prompt, display_inv
 from roguelib import *
 from collections import namedtuple
 from misc import any
-from objects import health_potion, teleport_ring, caltropz, inviso_potion, ghost_toga, jesus_bootz, speed_potion
+from objects import town_objects
 
 Level = namedtuple("Level", "m num_gobbos num_villagers num_gold time inhabitants objects name")
 
 shopkeeper1 = Creature(47,3, "v", 17, "shoppo")
-shopkeeper1.speek = "Welcome to David Gizbob's Magical Gizmos and Thingamabobs! How can I help you?"
-
-
-shield = Object(47,2, "0", 11, "shield", True, 3)
-town_objects = [shield]
-boots = Object(46,2, "L", 15, "boots of Jesus", True, 3, jesus_bootz)
-town_objects.append(boots)
-ring = Object(45,2, "o", 15, "ring of teleportation", True, 4, teleport_ring)
-town_objects.append(ring)
-potion_inv = Object(44,2, "b", 18, "potion of invisibility", True, 4, inviso_potion)
-town_objects.append(potion_inv)
-potion_spe = Object(47,4, "b", 16, "potion of speed", True, 3, speed_potion)
-town_objects.append(potion_spe)
-caltrops = Object(46,4, "*", 12, "caltrops", True, 3, caltropz)
-town_objects.append(caltrops)
-potion_hel = Object(45,4, "b", 1, "health potion", True, 3, health_potion)
-town_objects.append(potion_hel)
-phasecloak = Object(44,4, "M", 9, "toga of ghostlyness", True, 5, ghost_toga)
-town_objects.append(phasecloak)
+shopkeeper1.speek = "Welcome to the Flaming Cauldron, home to some of the greatest potions in the underdark."
+shopkeeper2 = Creature(47,9, "v", 17, "shoppo")
+shopkeeper2.speek = "Gooday, traveler. What kind of magical clothing do you wish to buy from Devon Malikar's Mystical Garb?"
+shopkeeper3 = Creature(2,3, "v", 17, "shoppo")
+shopkeeper3.speek = "So, how can we help you here at the Useful Junk Shoppe?"
+old_wizardio = Creature(45,19, "R", 1, "wizardio")
+old_wizardio.speek = "I hear you are going into the gobblin stronghold. 'Tis a perilous place. You shall need this."
 
 
 levels = [
-    Level(m="floorplan.txt", name="The Surface",
+    Level(m="floorplan_0.txt", name="The Begining",
+          num_gobbos=0, num_villagers=5, num_gold=0,
+          time=99999, inhabitants=[old_wizardio], objects=[]),
+    Level(m="floorplan.txt", name="Surface Stronghold",
           num_gobbos=5, num_villagers=0, num_gold=5,
           time=150, inhabitants=[], objects=[]),
     Level(m="floorplan2.txt", name="Undercollums",
@@ -43,42 +34,35 @@ levels = [
           num_gobbos=10, num_villagers=0, num_gold=10,
           time=200, inhabitants=[], objects=[]),
     Level(m="floorplan_5.txt",name="The dwarven village of Brorldown",
-          num_gobbos=0, num_villagers=5, num_gold=2,
-          time=20000, inhabitants=[shopkeeper1], objects=town_objects)
+          num_gobbos=0, num_villagers=5, num_gold=1,
+          time=99999, inhabitants=[shopkeeper1, shopkeeper2, shopkeeper3], objects=town_objects),
+    Level(m="floorplan_6.txt", name="Goblo Manor",
+          num_gobbos=10, num_villagers=0, num_gold=15,
+          time=100, inhabitants=[], objects=[]),
+    Level(m="floorplan_7.txt", name="Ghouler Station",
+          num_gobbos=10, num_villagers=0, num_gold=10,
+          time=100, inhabitants=[creatures.make_kart()], objects=[])
 ]
-
 
 def main(stdscr):
     inp = 0
-    current_level = 4
+    current_level = 7
 
     curses.curs_set(False) # Disable blinking cursor
     init_colors()
-    
-    creatures, objects, floorplan, timer = change_level(levels[current_level])
+
+    creatures, objects, floorplan, timer = change_level(levels[current_level],coins=0)
+
     width = len(floorplan[1])
     height = len(floorplan)
 
     while(inp != 113): # Quit game if player presses "q"
         stdscr.clear()
         player = list(filter(lambda c: c.type == "player", creatures))[0]
-        if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
-            timer -= 1
-        for c in creatures:
-            if c.invisotimer > 0:
-                c.invisotimer -= 1
-                if c.invisotimer == 0:
-                    c.curcolor = c.color  # Bug: now curcolor doesn't work
-                else:
-                    # Get the tile number at the creature's x and y coordinate
-                    tilenum = floorplan[c.y][c.x]
-                    invisocolor = tiles[tilenum][1]
-                    # Set curcolor equal to that color
-                    c.curcolor = invisocolor
-        if player.speedtimer > 0:
-            player.speedtimer -= 1
 
+        timer = update_timers(creatures, player, timer)
 
+        invisibility_check(player, floorplan)
 
         # if player is alive, do all the things
         if player.health > 0 and timer > 0:
@@ -90,21 +74,14 @@ def main(stdscr):
                         tick_gobbo(c,player,floorplan, objects)
                     if c.type == "villager":
                         tick_villy(c,player,floorplan, objects)
-                    if c.type == "shoppo":
+                    if c.type == "shoppo" or c.type == "wizardio":
                         tick_shoppo(c,player,floorplan, objects)
+                    if c.type == "kart":
+                        tick_kart(c, floorplan)
 
-            stdscr.addstr(height, 5, "coins-"+ str(player.coins), curses.color_pair(15))
-            stdscr.addstr(height, 20, "TIME LEFT-"+str(timer), curses.color_pair(10))
-            draw_map(stdscr, floorplan, tiles)
-            
-            
-            # Draw all creatures
-            for c in creatures:
-                stdscr.addstr(c.y, c.x, c.tile, curses.color_pair(c.curcolor))
-            
-            for o in objects:
-                stdscr.addstr(o.y, o.x, o.tile, curses.color_pair(o.color))
-                
+
+
+
             # Draw player info line
             gobbos = filter(lambda c: c.tile == "&" or c.tile =="!", creatures)
             gobbo_seeing = filter(lambda c: c.tile == "!", gobbos)
@@ -123,66 +100,103 @@ def main(stdscr):
                 player_status = "safe"
                 status_color = 5
                 status_symbol = " ~ "
-            
 
-                
+            stdscr.addstr(height, 5, "coins-" + str(player.coins), curses.color_pair(15))
+            stdscr.addstr(height, 20, "TIME LEFT-" + str(timer), curses.color_pair(10))
+            draw_map(stdscr, floorplan, tiles)
+
+            # Draw all creatures
+            for c in creatures:
+                stdscr.addstr(c.y, c.x, c.tile, curses.color_pair(c.curcolor))
+
+            for o in objects:
+                stdscr.addstr(o.y, o.x, o.tile, curses.color_pair(o.color))
+
             stdscr.addstr(height, 0, status_symbol, curses.color_pair(status_color))
-            
-            
+
             status_y = 25
-            csy = 0        
-            
-            
+            csy = 0
+
             display_news(stdscr, news, width, height)
-            
+
             display_inv(stdscr, player.inv, width, True)
 
             stdscr.addstr(height, 40, "health " + ("+" * player.health), curses.color_pair(1))
-                
-            
+
+            stdscr.refresh()
+
+            #up to here: always do these things
+            inp = stdscr.getch()  # "Get character" -- pauses and waits for player to type a key
+            keyboard_input(inp, player, floorplan, objects, creatures, stdscr)
+            if current_level == 0 and player.y == 0:
+                current_level += 1
+                player.health = 3
+                news.append("Level " + str(current_level + 1) + ", " + levels[current_level].name + "...")
+
+                creatures, objects, floorplan, timer = change_level(levels[current_level], player.inv,player.coins)
+
+                width = len(floorplan[1])
+                height = len(floorplan)
+            for o in objects:
+                if player.x == o.x and player.y == o.y and o.pickupable == True:
+                    if o.buyable == False:
+                        objects.remove(o)
+                        if o.type == "coin":
+                            player.coins +=1
+                        else:
+                            player.inv.append(o)
+                    else:
+                        if player.coins >= o.cost:
+                            prompt_str = "Do you want to buy this " + o.type + "? It costs " + str(o.cost) + " coins."
+                            resp = prompt(stdscr, height, prompt_str)
+                            if resp == ord("y"):
+                                player.inv.append(o)
+                                objects.remove(o)
+                                player.coins -= o.cost
+
+                        else:
+                            prompt_str = "You dont have enough money to buy this " + o.type + "."
+                            prompt(stdscr, height, prompt_str)
+
+
+            # Are we at the end of the level?
+            tilenum = floorplan[player.y][player.x]
+            if tilenum == 7:# and any(lambda o: o.type == "treasure chest", player.inv):
+                current_level += 1
+                player.health = 3
+                news.append("Level " + str(current_level + 1) + ", " + levels[current_level].name + "...")
+                creatures, objects, floorplan, timer = change_level(levels[current_level], player.inv, player.coins)
+                width = len(floorplan[1])
+                height = len(floorplan)
+
+
+
         else:
             stdscr.addstr(height / 2, width / 2 - 9, "GAME OVER", curses.color_pair(1))
             stdscr.addstr(height / 2 + 1, width / 2 - 10, "===========", curses.color_pair(1))
+            stdscr.refresh()
 
-        #up to here: always do these things
-        inp = stdscr.getch()  # "Get character" -- pauses and waits for player to type a key
-        keyboard_input(inp, player, floorplan, objects, creatures, stdscr)
-        for o in objects:
-            if player.x == o.x and player.y == o.y and o.pickupable == True:
-                if o.buyable == False:
-                    objects.remove(o)
-                    if o.type == "coin":
-                        player.coins +=1
-                    else:
-                        player.inv.append(o)
-                else:
-                    if player.coins >= o.cost:
-                        prompt_str = "Do you want to buy this " + o.type + "? It costs " + str(o.cost) + " coins."
-                        resp = prompt(stdscr, height, prompt_str)
-                        if resp == ord("y"):
-                            player.inv.append(o)
-                            objects.remove(o)
-                            player.coins -= o.cost
 
-                    else:
-                        prompt_str = "You dont have enough money to buy this " + o.type + "."
-                        prompt(stdscr, height, prompt_str)
+def update_timers(creatures, player, timer):
+    if player.speedtimer > 0:
+        player.speedtimer -= 1
+    if player.speedtimer <= 0 or player.speedtimer % 2 == 0:
+        timer -= 1
+    for c in creatures:
+        if c.invisotimer > 0:
+            c.invisotimer -= 1
+    return timer
 
-                
-        # Are we at the end of the level?
-        tilenum = floorplan[player.y][player.x]
-        if tilenum == 7:# and any(lambda o: o.type == "treasure chest", player.inv):
-            current_level += 1
-            player.health = 3
-            news.append("Level "+str(current_level+1)+", "+levels[current_level].name+"...")
-            creatures, objects, floorplan, timer = change_level(levels[current_level], inv=player.inv, coins = player.coins)
-            width = len(floorplan[1])
-            height = len(floorplan)
-        
-        
-            
-        stdscr.refresh()
-    
+
+def invisibility_check(c, floorplan):
+    if c.invisotimer == 0:
+        c.curcolor = c.color  # Bug: now curcolor doesn't work
+    else:
+        # Get the tile number at the creature's x and y coordinate
+        tilenum = floorplan[c.y][c.x]
+        invisocolor = tiles[tilenum][1]
+        # Set curcolor equal to that color
+        c.curcolor = invisocolor
 
 
 curses.wrapper(main)

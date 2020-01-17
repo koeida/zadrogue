@@ -2,6 +2,7 @@ from random import randint, choice
 from gamemap import its_opaque, tiles, no_wall_between, offmap
 from misc import ordered
 from roguelib import *
+from objects import town_objects
 
 
 class Creature:
@@ -37,6 +38,50 @@ def get_gobbo_target(gobbo):
         tx, ty = wander(gobbo)
     return (tx, ty)
 
+def make_kart():
+    kart = Creature(23,3,"8",9,"kart")
+    kart.xv = 0
+    kart.yv = 1
+    return kart
+
+def check_around(x, y, m, a):
+    count = 0
+    if m[y - 1][x] == a:
+        count += 1
+
+    if m[y + 1][x] == a:
+        count += 1
+
+    if m[y][x + 1] == a:
+        count += 1
+
+    if m[y][x - 1] == a:
+        count += 1
+
+    return count
+
+#def get_new_v(kart,gamemap):
+
+def tick_kart(kart, gamemap):
+    # Hold onto old x and y
+    kartoldx = kart.x
+    kartoldy = kart.y
+
+    kart.x += kart.xv
+    kart.y += kart.yv
+
+    if gamemap[kart.y][kart.x] != "a":
+        kart.x = kartoldx
+        kart.y = kartoldy
+        while kart.x == kartoldx and kart.y == kartoldy:
+            kart.xv = randint(-1,1)
+            kart.yv = randint(-1,1)
+            kart.x += kart.xv
+            kart.y += kart.yv
+            if gamemap[kart.y][kart.x] != "a":
+                kart.x = kartoldx
+                kart.y = kartoldy
+
 
 def tick_shoppo(c, player, floorplan, objects):
     oldx = c.x
@@ -46,6 +91,7 @@ def tick_shoppo(c, player, floorplan, objects):
     c.x += xmod
     c.y += ymod
     villager_sez(c, player)
+
     if gobbo_invalid_move(c, floorplan, oldx, oldy, objects):
         c.y = oldy
         c.x = oldx
@@ -69,6 +115,8 @@ def villager_sez(c, player):
 
     if distance(c, player) < 2 and c.has_talked == False:
         news.append("Villager sez: " + c.speek)
+        if c.type == "wizardio":
+            player.inv.append(choice(town_objects))
         c.has_talked = True
 
 def wander(c):
@@ -100,6 +148,14 @@ def gobbo_invalid_move(gobbo, m, oldx, oldy, objects):
     return False
 
 
+def player_has_shield(player):
+    shieldrnot = filter(lambda o: o.type == "shield", player.inv)
+    if shieldrnot != []:
+        return True
+    else:
+        return False
+
+
 def gobbo_attack(gobbo, player, m):
     # Make gobbo stand in place for a few turns after it hits you
     if gobbo.did_attack == True:
@@ -108,9 +164,12 @@ def gobbo_attack(gobbo, player, m):
         return
 
     if distance(gobbo, player) <= 1:
-        player.health -= 1
-        news.append("Oof! You got attacked!")
-        gobbo.did_attack = True
+        if not player_has_shield(player):
+            player.health -= 1
+            news.append("Oof! You got attacked!")
+            gobbo.did_attack = True
+        else:
+            drop_first(lambda o: o.type == "shield", player.inv)
 
 
 def gobbo_vision(gobbo, player, m):

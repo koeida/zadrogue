@@ -11,15 +11,21 @@ from rnews import *
 
 status = []
 
+def conv_if_int(s):
+    try:
+        return int(s)
+    except:
+        return s
+
 
 def read_floorplan(fname):
     f = file(fname,"r")
     lines = f.readlines()
-    lines = map(lambda l: map(int, list(l.strip())), lines)
+    lines = map(lambda l: map(conv_if_int, list(l.strip())), lines)
     f.close()
     return lines
 
-def change_level(level, inv = [], coins=100):
+def change_level(level, inv = [], coins=0):
     floorplan_file = level.m
     gobbonum = level.num_gobbos
     coinum = level.num_gold
@@ -38,11 +44,9 @@ def change_level(level, inv = [], coins=100):
     cs.append(player)
     
     player.inv = inv
-    caltrops = Object(46, 4, "*", 12, "caltrops", True, 3, caltropz)
-    player.inv.append(caltrops)
-
     rawck = Object(0,0,".", 12, "rock")
     player.inv.append(rawck)
+
     
     gobbo = creatures.Creature(0, 0, "&", 4, "gobbo")
     spawn_random(1, width - 1, 1, height - 2, gobbo, floorplan, cs, gobbonum)
@@ -50,13 +54,20 @@ def change_level(level, inv = [], coins=100):
     villager = creatures.Creature(0, 0, "v", 17, "villager")
     spawn_random(1, width - 1, 1, height - 2, villager, floorplan, cs, level.num_villagers)
     for v in cs:
-        if v.type == "villager":
-            speeches = ["Gooday stranger, welcome to our modest little town of Brorldown.",
+        if v.type == "villager" and level.name == "The dwarven village of Brorldown":
+            brorlspeeches = ["Gooday stranger, welcome to our modest little town of Brorldown.",
                         "I see you are loaded with stolen loot! Might I sugest you check out our magic item shops?",
                         "Oh its you, the notorious Namafero, raider of goblins! It is an honor to have you in our town...",
                         "'Sup!",
                         "I hope you enjoy your stay here, adventurer!"]
-            v.speek = choice(speeches)
+            v.speek = choice(brorlspeeches)
+        if v.type == "villager" and level.name == "The Begining":
+            tankspeeches = ["Gooday stranger, welcome to our modest little town of Tankton.",
+                        "I hear the town mage wants to converse with you.",
+                        "You're going into the goblin base? That's madness! You'll die!",
+                        "Hello there!",
+                        "I hope you enjoy your stay here, adventurer!"]
+            v.speek = choice(tankspeeches)
     
     chest = Object(0,0,"=", 15, "treasure chest")
     spawn_random(1, width - 1, 1, 5, chest, floorplan, objects, 1)
