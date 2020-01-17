@@ -8,6 +8,7 @@ from gamemap import *
 from misc import distance, drop_first, any
 from objects import Object, caltropz
 from rnews import *
+import level as l
 
 status = []
 
@@ -25,7 +26,9 @@ def read_floorplan(fname):
     f.close()
     return lines
 
-def change_level(level, inv = [], coins=0):
+def change_level(levelnumber, inv = [], coins=0):
+    level = l.levels[levelnumber]
+    news.append("Level " + str(levelnumber + 1) + ", " + l.levels[levelnumber].name + "...")
     floorplan_file = level.m
     gobbonum = level.num_gobbos
     coinum = level.num_gold
@@ -41,6 +44,7 @@ def change_level(level, inv = [], coins=0):
     
     player = creatures.Creature(18, 17, "@", 1, "player")
     player.coins = coins
+    player.health = 3
     cs.append(player)
     
     player.inv = inv

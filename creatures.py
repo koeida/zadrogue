@@ -1,8 +1,9 @@
-from random import randint, choice
-from gamemap import its_opaque, tiles, no_wall_between, offmap
-from misc import ordered
-from roguelib import *
+from gamemap import offmap, tiles
+from misc import ordered, distance, drop_first
 from objects import town_objects
+from random import randint, choice
+
+from rnews import news
 
 
 class Creature:
@@ -183,6 +184,17 @@ def gobbo_vision(gobbo, player, m):
     else:
         gobbo.tile = "&"
 
+
+def tick_creatures(creatures, floorplan, objects, player):
+    for c in creatures:
+        if c.type == "gobbo":
+            tick_gobbo(c, player, floorplan, objects)
+        if c.type == "villager":
+            tick_villy(c, player, floorplan, objects)
+        if c.type == "shoppo" or c.type == "wizardio":
+            tick_shoppo(c, player, floorplan, objects)
+        if c.type == "kart":
+            tick_kart(c, floorplan)
 
 def tick_gobbo(gobbo, player, m, objects):
     move_gobbo(gobbo, player, m, objects)
