@@ -150,7 +150,7 @@ def gobbo_invalid_move(gobbo, m, oldx, oldy, objects):
 
 
 def player_has_shield(player):
-    shieldrnot = filter(lambda o: o.type == "shield", player.inv)
+    shieldrnot = list(filter(lambda o: o.type == "shield", player.inv))
     if shieldrnot != []:
         return True
     else:
@@ -164,7 +164,8 @@ def gobbo_attack(gobbo, player, m):
             gobbo.did_attack = False
         return
 
-    if distance(gobbo, player) <= 1:
+    
+    if distance(gobbo, player) <= 1.0:
         if not player_has_shield(player):
             player.health -= 1
             news.append("Oof! You got attacked!")

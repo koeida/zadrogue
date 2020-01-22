@@ -52,7 +52,8 @@ def init_rgb(n, r, g, b):
     curses.init_color(n, r, g, b)
 
 def init_colors():
-    curses.init_color(2, 600, 400, 255)
+    curses.init_color(1, 800, 0,0)
+    curses.init_color(2, 500, 300, 200)
     curses.init_color(3, 0, 1000, 0)
     curses.init_color(4, 100, 400, 0)
 
@@ -71,15 +72,15 @@ def init_colors():
     curses.init_color(14, 301, 376, 929)
     curses.init_color(15, 603, 454, 243)
 
-    init_rgb(16, 135, 42, 193)
+    #init_rgb(16, 135, 42, 193)
 
-    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(1, 1, curses.COLOR_BLACK)
     curses.init_pair(2, 2, curses.COLOR_BLACK)  # walls, brown on black
     curses.init_pair(3, 3, curses.COLOR_BLACK)  # walls, brown on black
     curses.init_pair(4, 4, curses.COLOR_BLACK)
 
     curses.init_pair(5, 6, 5)  # SAFE LIGHT
-    curses.init_pair(6, curses.COLOR_YELLOW, curses.COLOR_RED)  # DANGER LIGHT
+    curses.init_pair(6, 9,1)  # DANGER LIGHT
     curses.init_pair(7, 7, 9)  # DANGER LIGHT
     curses.init_pair(9, 8, curses.COLOR_BLACK)
 
@@ -95,4 +96,4 @@ def init_colors():
 
     curses.init_pair(17, 15, curses.COLOR_BLACK)
 
-    curses.init_pair(18, 16, curses.COLOR_BLACK)
+    #curses.init_pair(18, 16, curses.COLOR_BLACK)

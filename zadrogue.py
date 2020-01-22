@@ -103,10 +103,10 @@ def main(stdscr):
 
 
 def generate_alert(creatures, player):
-    gobbos = filter(lambda c: c.tile == "&" or c.tile == "!", creatures)
-    gobbo_seeing = filter(lambda c: c.tile == "!", gobbos)
+    gobbos = list(filter(lambda c: c.tile == "&" or c.tile == "!", creatures))
+    gobbo_seeing = list(filter(lambda c: c.tile == "!", gobbos))
     gobbos_near = any(lambda gobbo: distance(gobbo, player) < 3, gobbos)
-    yellowlert = filter(lambda g: g.target != None, gobbos)
+    yellowlert = list(filter(lambda g: g.target != None, gobbos))
     if len(gobbo_seeing) > 0:
         player_status = "unsafe"
         status_color = 6

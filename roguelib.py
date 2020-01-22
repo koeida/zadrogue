@@ -20,9 +20,9 @@ def conv_if_int(s):
 
 
 def read_floorplan(fname):
-    f = file(fname,"r")
+    f = open(fname,"r")
     lines = f.readlines()
-    lines = map(lambda l: map(conv_if_int, list(l.strip())), lines)
+    lines = list(map(lambda l: list(map(conv_if_int, list(l.strip()))), lines))
     f.close()
     return lines
 
